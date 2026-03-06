@@ -1,0 +1,104 @@
+# ============================================================
+# TERP Leads Analytics Dashboard - Docker Compose
+# ============================================================
+
+services:
+
+  # ----------------------------------------------------------
+  # FastAPI Backend
+  # ----------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: terp_api
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=mysql        # Override host to point to the MySQL service
+    volumes:
+      - .:/app               # Live reload during development
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - terp_network
+    restart: unless-stopped
+
+  # ----------------------------------------------------------
+  # Streamlit Dashboard
+  # ----------------------------------------------------------
+  streamlit:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: terp_streamlit
+    command: streamlit run dashboardtrial.py --server.port 8501 --server.address 0.0.0.0
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=mysql
+      - API_BASE_URL=http://api:8000
+    volumes:
+      - .:/app
+    depends_on:
+      - api
+    networks:
+      - terp_network
+    restart: unless-stopped
+
+  # ----------------------------------------------------------
+  # MySQL Database
+  # ----------------------------------------------------------
+  mysql:
+    image: mysql:8.0
+    container_name: terp_mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro   # Optional: seed SQL
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - terp_network
+    restart: unless-stopped
+
+  # ----------------------------------------------------------
+  # Adminer - lightweight DB GUI (optional, remove in prod)
+  # ----------------------------------------------------------
+  adminer:
+    image: adminer:latest
+    container_name: terp_adminer
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+    networks:
+      - terp_network
+    restart: unless-stopped
+
+# ----------------------------------------------------------
+# Volumes & Networks
+# ----------------------------------------------------------
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  terp_network:
+    driver: bridge
