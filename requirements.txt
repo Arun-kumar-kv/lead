@@ -7,3 +7,4 @@ apscheduler
 sqlacodegen
 streamlit
 plotly
+dotenv

@@ -36,6 +36,11 @@ class LeadsDashboardService:
             print("conversion_rate",conversion_rate)
         else:
             conversion_rate = 0.0
+         # ── New metrics ───────────────────────────────────
+        lead_to_enquiry      = self.leads_repo.get_lead_to_enquiry_conversion()
+        full_funnel          = self.leads_repo.get_full_funnel_conversion()
+        vacant_coverage      = self.leads_repo.get_vacant_units_lead_coverage()
+        low_conversion_units = self.leads_repo.get_vacant_units_high_leads_low_conversion()
 
         return {
             "metrics": {
@@ -45,6 +50,15 @@ class LeadsDashboardService:
                 "conversion_rate": conversion_rate,
             },
             "conversion_funnel": conversion_breakdown,
+            "funnel_rates": {
+                "lead_to_enquiry_pct":          full_funnel["lead_to_enquiry_pct"],
+                "enquiry_to_tenant_pct":        full_funnel["enquiry_to_tenant_pct"],
+                "lead_to_tenant_conversion_pct": full_funnel["lead_to_tenant_conversion_pct"],
+                "converted_to_enquiry":         lead_to_enquiry["converted_to_enquiry"],
+                "converted_to_tenant":          full_funnel["converted_to_tenant"],
+            },
+            "vacant_unit_coverage":  vacant_coverage,
+            "low_conversion_units":  low_conversion_units,
             "ratings_breakdown": ratings_breakdown,
             "recent_activity": {
                 "recent_leads": recent_leads

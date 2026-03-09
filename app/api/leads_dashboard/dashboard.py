@@ -45,6 +45,63 @@ async def get_recent_leads(limit: int = 10, db: Session = Depends(get_db)):
     repo = LeadsRepository(db)
     return {"recent_leads": repo.get_recent_leads_live(limit=limit)}
 
+@router.get("/live/enquiry-conversion")
+async def get_lead_to_enquiry_conversion(db: Session = Depends(get_db)):
+    """
+    Get lead → enquiry conversion rate.
+    Returns total leads, how many converted to an enquiry, and the conversion %.
+    """
+    repo = LeadsRepository(db)
+    return repo.get_lead_to_enquiry_conversion()
+
+
+@router.get("/live/funnel")
+async def get_full_funnel_conversion(db: Session = Depends(get_db)):
+    """
+    Get full conversion funnel rates.
+    - Lead → Enquiry %
+    - Enquiry → Tenant %
+    - Lead → Tenant (overall) %
+    """
+    repo = LeadsRepository(db)
+    return repo.get_full_funnel_conversion()
+
+
+@router.get("/live/vacant-coverage")
+async def get_vacant_units_lead_coverage(db: Session = Depends(get_db)):
+    """
+    Get lead coverage for vacant units over the last 30 days.
+    Returns counts, coverage %, avg leads per unit, and a sufficiency verdict.
+    """
+    repo = LeadsRepository(db)
+    return repo.get_vacant_units_lead_coverage()
+
+
+@router.get("/live/low-conversion-units")
+async def get_vacant_units_high_leads_low_conversion(db: Session = Depends(get_db)):
+    """
+    Get vacant units with high hot-lead volume but low conversion to tenant.
+    Units with < 20% conversion rate are flagged as 'Low Conversion'.
+    """
+    repo = LeadsRepository(db)
+    return {"units": repo.get_vacant_units_high_leads_low_conversion()}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # @router.get("/trends/conversion")
 # async def get_conversion_trend(days: int = 30, db: Session = Depends(get_db)):
 #     """Get conversion rate trend (from snapshots - fast)"""
