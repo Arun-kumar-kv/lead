@@ -23,14 +23,3 @@ api_router.include_router(
     prefix="/revenue-dashboard",
     tags=["Revenue Dashboard"]
 )
-### 🌐 **Resulting API Structure:**
-
-# GET /api/v1/leads-dashboard/
-# GET /api/v1/leads-dashboard/live/total
-# GET /api/v1/leads-dashboard/live/conversion-breakdown
-# GET /api/v1/leads-dashboard/live/ratings
-
-# GET /api/v1/vacancy-dashboard/
-# GET /api/v1/vacancy-dashboard/live/vacant-units
-# GET /api/v1/vacancy-dashboard/live/vacancy-rate
-# GET /api/v1/vacancy-dashboard/trends/vacancy-rate

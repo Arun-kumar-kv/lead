@@ -3,7 +3,6 @@
 Auto-reflected models from existing TERP vacancy-related tables
 Assumes you have tables like: TERP_UNITS, TERP_PROPERTIES, TERP_TENANTS, etc.
 """
-
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy import MetaData, Table
 from app.services.database import engine
@@ -22,7 +21,7 @@ for schema in schemas:
     except Exception:
         pass
 
-# 🔥 CRITICAL PART: REMOVE ALL FOREIGN KEYS
+# CRITICAL PART: REMOVE ALL FOREIGN KEYS
 for table in metadata.tables.values():
     table.foreign_keys.clear()
     table.constraints = {
@@ -42,10 +41,10 @@ try:
     TerpPropertyUnitStatus = Base.classes.TERP_LS_PROPERTY_UNIT_STATUS
     TerpPropertyUnitType = Base.classes.TERP_LS_PROPERTY_UNIT_TYPE
     # TerpUnitShifting = Base.classes.TERP_LS_UNIT_SHIFTING
-    logger.info("✅ Vacancy-related models reflected successfully")
+    logger.info("Vacancy-related models reflected successfully")
 
 except AttributeError as e:
-    logger.error(f"❌ Error reflecting vacancy tables: {e}")
+    logger.error(f"Error reflecting vacancy tables: {e}")
     raise
 
 __all__ = [

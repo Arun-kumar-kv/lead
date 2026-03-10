@@ -133,7 +133,7 @@ class LeadsDashboardService:
     }
         
         
-        # ── Core metrics ──────────────────────────────────
+        #Core metrics
         total_leads          = self.leads_repo.get_total_leads_live(filters)
         todays_new_leads     = self.leads_repo.get_todays_new_leads_live(filters)
         conversion_breakdown = self.leads_repo.get_conversion_breakdown_live(filters)
@@ -146,11 +146,14 @@ class LeadsDashboardService:
         else:
             conversion_rate = 0.0
 
-        # ── New metrics ───────────────────────────────────
+        #New metrics 
         lead_to_enquiry      = self.leads_repo.get_lead_to_enquiry_conversion(filters)
         full_funnel          = self.leads_repo.get_full_funnel_conversion(filters)
         vacant_coverage      = self.leads_repo.get_vacant_units_lead_coverage(filters)
         low_conversion_units = self.leads_repo.get_vacant_units_high_leads_low_conversion(filters)
+        active_inactive      = self.leads_repo.get_active_inactive_leads_count(filters)
+        new_leads_periods    = self.leads_repo.get_new_leads_periods(filters)
+        leads_by_channel = self.leads_repo.get_leads_by_channel(filters)
         metrics_data = {
                 "total_leads":      total_leads,
                 "todays_new_leads": todays_new_leads,
@@ -191,8 +194,12 @@ class LeadsDashboardService:
             # },
             "vacant_unit_coverage":  vacant_coverage,
             "low_conversion_units":  low_conversion_units,
+            "active_inactive":   active_inactive,
+            "new_leads_periods": new_leads_periods,
+            "leads_by_channel": {"title": "Leads by Channel","units": leads_by_channel,},
             "ratings_breakdown": self._shape_ratings_breakdown(ratings_breakdown),
             "recent_leads": self._shape_recent_leads(recent_leads),
+
 
             "last_updated": datetime.utcnow().isoformat(),
         }

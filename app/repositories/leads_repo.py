@@ -39,9 +39,9 @@ class LeadsRepository:
             date_to = date_to.replace(hour=23, minute=59, second=59)
             query = query.filter(TerpLeads.INQUIRY_DATE <= date_to)
         return query
-    # --------------------------------------------------
+    
     # 1️⃣ Total Active Leads (Safe & Simple)
-    # --------------------------------------------------
+    
     def get_total_leads_live(self,filters: dict = None) -> int:
         """
         Live query: Total active leads
@@ -53,9 +53,9 @@ class LeadsRepository:
             or 0
         )
 
-    # --------------------------------------------------
+    
     # 2️⃣ Dynamic Conversion Breakdown (NO HARDCODING)
-    # --------------------------------------------------
+    
     def get_conversion_breakdown_live(self,filters: dict = None) -> Dict[str, int]:
         """
         Live query: Conversion stage breakdown (dynamic)
@@ -83,9 +83,9 @@ class LeadsRepository:
 
         return breakdown
 
-    # --------------------------------------------------
+    
     # 3️⃣ Dynamic Ratings Breakdown (NO ID HARDCODING)
-    # --------------------------------------------------
+    
     def get_leads_by_ratings_live(self,filters: dict = None) -> List[Dict[str, Any]]:
         """
         Live query: Lead count grouped by rating (dynamic)
@@ -116,9 +116,9 @@ class LeadsRepository:
             if row.rating
         ]
 
-    # --------------------------------------------------
+    
     # 4️⃣ Recent Leads (Already Good — Minor Cleanup)
-    # --------------------------------------------------
+    
     def get_recent_leads_live(self, limit: int = 10,filters: dict = None) -> List[Dict[str, Any]]:
         """
         Live query: Recent lead inquiries with full joins
@@ -185,9 +185,9 @@ class LeadsRepository:
             for row in results
         ]
 
-    # --------------------------------------------------
+    
     # 5️⃣ Today's Leads (Optimized for Index Usage)
-    # --------------------------------------------------
+    
     def get_todays_new_leads_live(self,filters: dict = None) -> int:
         """
         Live query: Leads created today
@@ -211,9 +211,9 @@ class LeadsRepository:
             .scalar()
             or 0
         )
-    # --------------------------------------------------
+    
     # 6️⃣ Lead → Enquiry Conversion Rate
-    # --------------------------------------------------
+    
     def get_lead_to_enquiry_conversion(self,filters: dict = None) -> Dict[str, Any]:
         """
         Live query: How many active leads converted to an enquiry,
@@ -239,10 +239,10 @@ class LeadsRepository:
             "conversion_rate_pct": conversion_rate,
         }
 
-    # --------------------------------------------------
+    
     # 7️⃣ Full Funnel Conversion Rates
     #    Lead → Enquiry → Tenant  (+ overall Lead → Tenant)
-    # --------------------------------------------------
+   
     def get_full_funnel_conversion(self,filters: dict = None) -> Dict[str, Any]:
         """
         Live query: Full conversion funnel rates.
@@ -286,9 +286,9 @@ class LeadsRepository:
             "lead_to_tenant_conversion_pct": round(to_tenant * 100.0 / total_leads, 2) if total_leads else 0.0,
         }
 
-    # --------------------------------------------------
+    
     # 8️⃣ Vacant Units — Lead Coverage (Last 30 Days)
-    # --------------------------------------------------
+    
     def get_vacant_units_lead_coverage(self,filters: dict = None) -> Dict[str, Any]:
         """
         Live query: How well vacant units are covered by recent leads.
@@ -342,9 +342,9 @@ class LeadsRepository:
             "sufficiency_verdict": verdict,
         }
 
-    # --------------------------------------------------
+    
     # 9️⃣ Vacant Units — High Leads but Low Conversion
-    # --------------------------------------------------
+    
     def get_vacant_units_high_leads_low_conversion(self,filters: dict = None) -> List[Dict[str, Any]]:
         """
         Live query: Vacant units that attract hot leads (LEADS_RATINGS = 7)
@@ -419,6 +419,123 @@ class LeadsRepository:
                     if (row.conversion_rate_pct or 0) < 20
                     else "Converting Well"
                 ),
+            }
+            for row in results
+        ]
+    
+    # 🔟 Active vs Non-Active Leads Count
+    
+    def get_active_inactive_leads_count(self, filters: dict = None) -> Dict[str, Any]:
+        """
+        Live query: Count of active vs inactive leads.
+        """
+        query = (
+            self.db.query(
+                func.sum(case((TerpLeads.ACTIVE == 1, 1), else_=0)).label("active_leads"),
+                func.sum(case((TerpLeads.ACTIVE == 0, 1), else_=0)).label("inactive_leads"),
+                func.count(TerpLeads.ID).label("total"),
+            )
+        )
+        query = self._apply_filters(query, filters or {})
+        result = query.one()
+        active   = result.active_leads or 0
+        inactive = result.inactive_leads or 0
+        total    = result.total or 0
+        return {
+            "active_leads":   active,
+            "inactive_leads": inactive,
+            "total":          total,
+            "active_pct":     round(float(active) * 100.0 / float(total), 2) if total else 0.0,
+            "inactive_pct":   round(float(inactive) * 100.0 / float(total), 2) if total else 0.0,
+        }
+    
+    # 1️⃣1️⃣ New Leads — Today / This Week / This Month
+    
+    def get_new_leads_periods(self, filters: dict = None) -> Dict[str, int]:
+        """
+        Live query: New leads grouped by today, this week, this month.
+        Mirrors:
+        COUNT(CASE WHEN DATE(INQUIRY_DATE) = CURDATE() ...)
+        COUNT(CASE WHEN YEARWEEK(INQUIRY_DATE,1) = YEARWEEK(CURDATE(),1) ...)
+        COUNT(CASE WHEN MONTH+YEAR match current ...)
+        """
+        now            = datetime.utcnow()
+        today_start    = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        tomorrow_start = today_start + timedelta(days=1)
+
+        # ISO week: Monday = start of week
+        week_start  = today_start - timedelta(days=now.weekday())
+        week_end    = week_start + timedelta(days=7)
+
+        # Month: first day of current month
+        month_start = today_start.replace(day=1)
+        if now.month == 12:
+            month_end = today_start.replace(year=now.year + 1, month=1, day=1)
+        else:
+            month_end = today_start.replace(month=now.month + 1, day=1)
+
+        query = (
+            self.db.query(
+                func.sum(
+                    case((
+                        and_(
+                            TerpLeads.INQUIRY_DATE >= today_start,
+                            TerpLeads.INQUIRY_DATE <  tomorrow_start,
+                        ), 1), else_=0)
+                ).label("leads_today"),
+                func.sum(
+                    case((
+                        and_(
+                            TerpLeads.INQUIRY_DATE >= week_start,
+                            TerpLeads.INQUIRY_DATE <  week_end,
+                        ), 1), else_=0)
+                ).label("leads_this_week"),
+                func.sum(
+                    case((
+                        and_(
+                            TerpLeads.INQUIRY_DATE >= month_start,
+                            TerpLeads.INQUIRY_DATE <  month_end,
+                        ), 1), else_=0)
+                ).label("leads_this_month"),
+            )
+            .filter(TerpLeads.ACTIVE == 1)
+        )
+        query  = self._apply_filters(query, filters or {})
+        result = query.one()
+        return {
+            "leads_today":      int(result.leads_today      or 0),
+            "leads_this_week":  int(result.leads_this_week  or 0),
+            "leads_this_month": int(result.leads_this_month or 0),
+        }
+    
+   
+    # 1️⃣2️⃣ Leads by Channel
+    
+    def get_leads_by_channel(self, filters: dict = None) -> List[Dict[str, Any]]:
+        """
+        Live query: Lead count grouped by channel.
+        """
+        query = (
+            self.db.query(
+                TerpLeadsChannel.CHANNEL.label("channel"),
+                func.count(TerpLeads.ID).label("count"),
+            )
+            .join(TerpLeads, TerpLeads.LEADS_CHANNEL == TerpLeadsChannel.ID)
+            .filter(TerpLeads.ACTIVE == 1)
+        )
+        query = self._apply_filters(query, filters or {})
+        results = (
+            query
+            .group_by(TerpLeadsChannel.CHANNEL)
+            .order_by(func.count(TerpLeads.ID).desc())
+            .all()
+        )
+        total = sum(row.count for row in results)
+        return [
+            {
+                "channel":     row.channel,
+                "count":       row.count,
+                "percentage":  round(row.count * 100.0 / total, 2) if total else 0.0,
             }
             for row in results
         ]

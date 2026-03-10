@@ -1,4 +1,4 @@
-# app/api/v1/endpoints/leads_dashboard.py
+# app/api/leads_dashboard/dashboard.py
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.services.database import get_db
@@ -91,6 +91,33 @@ async def get_vacant_units_high_leads_low_conversion(db: Session = Depends(get_d
 
 
 
+@router.get("/live/active-inactive")
+async def get_active_inactive_leads(db: Session = Depends(get_db)):
+    """
+    Get active vs inactive lead counts with percentages.
+    """
+    repo = LeadsRepository(db)
+    return repo.get_active_inactive_leads_count()
+
+
+@router.get("/live/new-leads-periods")
+async def get_new_leads_periods(db: Session = Depends(get_db)):
+    """
+    Get new lead counts for today, this week, and this month.
+    """
+    repo = LeadsRepository(db)
+    return repo.get_new_leads_periods()
+
+@router.get("/live/leads-by-channel")
+async def get_leads_by_channel(db: Session = Depends(get_db)):
+    """
+    Get lead count grouped by channel (Email, Walk in, Telephonic, etc.)
+    """
+    repo = LeadsRepository(db)
+    return {
+        "title": "Leads by Channel",
+        "units": repo.get_leads_by_channel(),
+    }
 
 
 
@@ -103,10 +130,3 @@ async def get_vacant_units_high_leads_low_conversion(db: Session = Depends(get_d
 
 
 
-
-
-# @router.get("/trends/conversion")
-# async def get_conversion_trend(days: int = 30, db: Session = Depends(get_db)):
-#     """Get conversion rate trend (from snapshots - fast)"""
-#     repo = LeadsRepository(db)
-#     return {"trend": repo.get_conversion_trend_from_snapshot(days=days)}

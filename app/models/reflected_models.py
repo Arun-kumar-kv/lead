@@ -7,12 +7,12 @@ from app.services.database import engine
 metadata = MetaData()
 inspector = inspect(engine)
 
-# -------------------------------------------------------
+
 # Step 1: Reflect all schemas
 # First attempt: reflect entire schema at once (fast).
 # Fallback: reflect table-by-table, skipping broken ones.
 # This handles cross-schema FK crashes (e.g. TERP_LEGAL_CASE_DETAILS).
-# -------------------------------------------------------
+
 schemas = inspector.get_schema_names()
 
 for schema in schemas:
@@ -35,9 +35,9 @@ for schema in schemas:
                 skipped += 1
         print(f"Info: Schema '{schema}' — reflected {reflected} tables, skipped {skipped}.")
 
-# -------------------------------------------------------
+
 # Step 2: Remove all foreign keys to avoid automap errors
-# -------------------------------------------------------
+
 for table in metadata.tables.values():
     table.foreign_keys.clear()
     table.constraints = {
@@ -45,9 +45,9 @@ for table in metadata.tables.values():
         if c.__class__.__name__ != "ForeignKeyConstraint"
     }
 
-# -------------------------------------------------------
+
 # Step 3: Build automap base
-# -------------------------------------------------------
+
 Base = automap_base(metadata=metadata)
 
 def _no_relationship(*args, **kwargs):
@@ -55,9 +55,9 @@ def _no_relationship(*args, **kwargs):
 
 Base.prepare(generate_relationship=_no_relationship)
 
-# -------------------------------------------------------
+
 # Step 4: Helper — resolve table regardless of schema prefix
-# -------------------------------------------------------
+
 def _get_class(table_name: str):
     """
     Finds the automap class for a table, handling schema-prefixed
@@ -72,9 +72,9 @@ def _get_class(table_name: str):
                 return Base.classes[plain]
     raise AttributeError(f"Table '{table_name}' not found in reflected metadata")
 
-# -------------------------------------------------------
+
 # Step 5: Assign models — fail loudly with helpful message
-# -------------------------------------------------------
+
 REQUIRED_TABLES = {
     # TERP_LEADS core tables
     "TerpLeads":             "TERP_LEADS",

@@ -18,7 +18,7 @@ metadata = MetaData()
 inspector = inspect(engine)
 schemas = inspector.get_schema_names()
 
-# ── Reflect all regular tables ───────────────────────────────────────────────
+#Reflect all regular tables 
 for schema in schemas:
     try:
         metadata.reflect(bind=engine, schema=schema)
@@ -26,7 +26,7 @@ for schema in schemas:
         pass
 
 
-# ── Helper: reflect view and mark a PK column ────────────────────────────────
+#Helper: reflect view and mark a PK column 
 def _reflect_view(schema=None):
     kwargs = dict(autoload_with=engine, extend_existing=True)
     if schema is not None:
@@ -44,7 +44,7 @@ def _reflect_view(schema=None):
     return tbl
 
 
-# Try default schema first, then each named schema
+#Try default schema first, then each named schema
 _view_table = None
 
 try:
@@ -68,7 +68,7 @@ if _view_table is None:
         "Verify the view exists and the DB user has SELECT privilege on it."
     )
 
-# ── Remove all foreign keys (same pattern as all other model files) ──────────
+#Remove all foreign keys (same pattern as all other model files) 
 for table in metadata.tables.values():
     table.foreign_keys.clear()
     table.constraints = {
@@ -76,7 +76,7 @@ for table in metadata.tables.values():
         if c.__class__.__name__ != "ForeignKeyConstraint"
     }
 
-# ── Automap all regular tables ───────────────────────────────────────────────
+#Automap all regular tables 
 Base = automap_base(metadata=metadata)
 
 
@@ -87,7 +87,7 @@ def _no_relationship(*args, **kwargs):
 Base.prepare(generate_relationship=_no_relationship)
 
 
-# ── Named model classes ──────────────────────────────────────────────────────
+#Named model classes 
 
 # Contracts
 try:
