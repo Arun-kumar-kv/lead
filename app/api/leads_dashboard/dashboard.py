@@ -8,7 +8,7 @@ from app.repositories.leads_repo import LeadsRepository
 router = APIRouter()
 
 @router.get("/")
-async def get_leads_dashboard(db: Session = Depends(get_db)):
+async def get_leads_dashboard(property_id:int = None,property_type: str = None,date_from:str = None,date_to:str = None,db: Session = Depends(get_db)):
     """
     Get complete leads analytics dashboard
     
@@ -19,7 +19,10 @@ async def get_leads_dashboard(db: Session = Depends(get_db)):
     Response time: 50-150ms
     """
     service = LeadsDashboardService(db)
-    return service.get_dashboard_data()
+    return service.get_dashboard_data(property_id=property_id,
+        property_type=property_type,
+        date_from=date_from,
+        date_to=date_to,)
 
 @router.get("/live/total")
 async def get_total_leads_live(db: Session = Depends(get_db)):

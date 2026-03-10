@@ -91,15 +91,54 @@ class LeadsDashboardService:
             ],
             "units": leads,
         }
-    def get_dashboard_data(self) -> Dict[str, Any]:
+    
+    @staticmethod
+    def _shape_lead_funnel_rates(metrics: dict, funnel_rates: dict) -> dict:
+        total_leads = metrics["total_leads"]
+        enquiry = funnel_rates["converted_to_enquiry"]
+        tenant = funnel_rates["converted_to_tenant"]
+
+        return {
+            "title": "Lead Conversion ",
+            "units": [
+                {
+                    "name": "Total Leads",
+                    "value": f"{total_leads:,}"
+                },
+                {
+                    "name": "Enquiry",
+                    "value": f"{enquiry:,}",
+                    "percentage": f'{funnel_rates["lead_to_enquiry_pct"]}% Conv.'
+                },
+                {
+                    "name": "Tenant",
+                    "value": f"{tenant:,}",
+                    "percentage": f'{funnel_rates["lead_to_tenant_conversion_pct"]}% Conv.'
+                },
+             
+            ]
+        }
+
+
+
+
+
+    def get_dashboard_data(self,property_id: int = None,property_type: str = None,date_from: str = None,date_to: str = None,) -> Dict[str, Any]:
         """Get full dashboard data"""
+        filters = {
+        "property_id":   property_id,
+        "property_type": property_type,
+        "date_from":     date_from,
+        "date_to":       date_to,
+    }
+        
         
         # ── Core metrics ──────────────────────────────────
-        total_leads          = self.leads_repo.get_total_leads_live()
-        todays_new_leads     = self.leads_repo.get_todays_new_leads_live()
-        conversion_breakdown = self.leads_repo.get_conversion_breakdown_live()
-        ratings_breakdown    = self.leads_repo.get_leads_by_ratings_live()
-        recent_leads         = self.leads_repo.get_recent_leads_live(limit=10)
+        total_leads          = self.leads_repo.get_total_leads_live(filters)
+        todays_new_leads     = self.leads_repo.get_todays_new_leads_live(filters)
+        conversion_breakdown = self.leads_repo.get_conversion_breakdown_live(filters)
+        ratings_breakdown    = self.leads_repo.get_leads_by_ratings_live(filters)
+        recent_leads         = self.leads_repo.get_recent_leads_live(limit=10,filters=filters)
 
         converted = conversion_breakdown.get("Convert to Tenant", 0)
         if total_leads > 0:
@@ -108,16 +147,17 @@ class LeadsDashboardService:
             conversion_rate = 0.0
 
         # ── New metrics ───────────────────────────────────
-        lead_to_enquiry      = self.leads_repo.get_lead_to_enquiry_conversion()
-        full_funnel          = self.leads_repo.get_full_funnel_conversion()
-        vacant_coverage      = self.leads_repo.get_vacant_units_lead_coverage()
-        low_conversion_units = self.leads_repo.get_vacant_units_high_leads_low_conversion()
+        lead_to_enquiry      = self.leads_repo.get_lead_to_enquiry_conversion(filters)
+        full_funnel          = self.leads_repo.get_full_funnel_conversion(filters)
+        vacant_coverage      = self.leads_repo.get_vacant_units_lead_coverage(filters)
+        low_conversion_units = self.leads_repo.get_vacant_units_high_leads_low_conversion(filters)
         metrics_data = {
                 "total_leads":      total_leads,
                 "todays_new_leads": todays_new_leads,
                 "converted_leads":  converted,
                 "conversion_rate":  conversion_rate,
             }
+        
 
         funnel_rates_data = {
                 "lead_to_enquiry_pct":           full_funnel["lead_to_enquiry_pct"],
@@ -141,13 +181,14 @@ class LeadsDashboardService:
             },
             "conversion_funnel": self._shape_conversion_funnel(conversion_breakdown),
             "kpi_indicators":    self._shape_kpi_indicators(metrics_data, funnel_rates_data), 
-            "funnel_rates": {
-                "lead_to_enquiry_pct":           full_funnel["lead_to_enquiry_pct"],
-                "enquiry_to_tenant_pct":         full_funnel["enquiry_to_tenant_pct"],
-                "lead_to_tenant_conversion_pct": full_funnel["lead_to_tenant_conversion_pct"],
-                "converted_to_enquiry":          lead_to_enquiry["converted_to_enquiry"],
-                "converted_to_tenant":           full_funnel["converted_to_tenant"],
-            },
+            "lead_funnel_rates": self._shape_lead_funnel_rates(metrics_data, funnel_rates_data),
+            # "funnel_rates": {
+            #     "lead_to_enquiry_pct":           full_funnel["lead_to_enquiry_pct"],
+            #     "enquiry_to_tenant_pct":         full_funnel["enquiry_to_tenant_pct"],
+            #     "lead_to_tenant_conversion_pct": full_funnel["lead_to_tenant_conversion_pct"],
+            #     "converted_to_enquiry":          lead_to_enquiry["converted_to_enquiry"],
+            #     "converted_to_tenant":           full_funnel["converted_to_tenant"],
+            # },
             "vacant_unit_coverage":  vacant_coverage,
             "low_conversion_units":  low_conversion_units,
             "ratings_breakdown": self._shape_ratings_breakdown(ratings_breakdown),

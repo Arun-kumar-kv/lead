@@ -23,11 +23,26 @@ from app.models.reflected_models import (
 class LeadsRepository:
     def __init__(self, db: Session):
         self.db = db
-
+    def _apply_filters(self, query, filters: dict):
+        """Apply optional filters to any TerpLeads query."""
+        if not filters:
+            return query
+        if filters.get("property_id"):
+            query = query.filter(TerpLeads.PROPERTY_ID == filters["property_id"])
+        if filters.get("property_type"):
+            query = query.filter(TerpLeads.LEADS_TYPE == filters["property_type"])
+        if filters.get("date_from"):
+            date_from = datetime.strptime(filters["date_from"], "%Y-%m-%d")
+            query = query.filter(TerpLeads.INQUIRY_DATE >= date_from)
+        if filters.get("date_to"):
+            date_to = datetime.strptime(filters["date_to"], "%Y-%m-%d")
+            date_to = date_to.replace(hour=23, minute=59, second=59)
+            query = query.filter(TerpLeads.INQUIRY_DATE <= date_to)
+        return query
     # --------------------------------------------------
     # 1️⃣ Total Active Leads (Safe & Simple)
     # --------------------------------------------------
-    def get_total_leads_live(self) -> int:
+    def get_total_leads_live(self,filters: dict = None) -> int:
         """
         Live query: Total active leads
         """
@@ -41,7 +56,7 @@ class LeadsRepository:
     # --------------------------------------------------
     # 2️⃣ Dynamic Conversion Breakdown (NO HARDCODING)
     # --------------------------------------------------
-    def get_conversion_breakdown_live(self) -> Dict[str, int]:
+    def get_conversion_breakdown_live(self,filters: dict = None) -> Dict[str, int]:
         """
         Live query: Conversion stage breakdown (dynamic)
         Automatically adapts if new conversion stages are added.
@@ -71,7 +86,7 @@ class LeadsRepository:
     # --------------------------------------------------
     # 3️⃣ Dynamic Ratings Breakdown (NO ID HARDCODING)
     # --------------------------------------------------
-    def get_leads_by_ratings_live(self) -> List[Dict[str, Any]]:
+    def get_leads_by_ratings_live(self,filters: dict = None) -> List[Dict[str, Any]]:
         """
         Live query: Lead count grouped by rating (dynamic)
         Automatically includes new ratings.
@@ -104,7 +119,7 @@ class LeadsRepository:
     # --------------------------------------------------
     # 4️⃣ Recent Leads (Already Good — Minor Cleanup)
     # --------------------------------------------------
-    def get_recent_leads_live(self, limit: int = 10) -> List[Dict[str, Any]]:
+    def get_recent_leads_live(self, limit: int = 10,filters: dict = None) -> List[Dict[str, Any]]:
         """
         Live query: Recent lead inquiries with full joins
         """
@@ -173,7 +188,7 @@ class LeadsRepository:
     # --------------------------------------------------
     # 5️⃣ Today's Leads (Optimized for Index Usage)
     # --------------------------------------------------
-    def get_todays_new_leads_live(self) -> int:
+    def get_todays_new_leads_live(self,filters: dict = None) -> int:
         """
         Live query: Leads created today
         Avoids func.date() to allow index usage.
@@ -199,7 +214,7 @@ class LeadsRepository:
     # --------------------------------------------------
     # 6️⃣ Lead → Enquiry Conversion Rate
     # --------------------------------------------------
-    def get_lead_to_enquiry_conversion(self) -> Dict[str, Any]:
+    def get_lead_to_enquiry_conversion(self,filters: dict = None) -> Dict[str, Any]:
         """
         Live query: How many active leads converted to an enquiry,
         and what percentage that represents.
@@ -228,7 +243,7 @@ class LeadsRepository:
     # 7️⃣ Full Funnel Conversion Rates
     #    Lead → Enquiry → Tenant  (+ overall Lead → Tenant)
     # --------------------------------------------------
-    def get_full_funnel_conversion(self) -> Dict[str, Any]:
+    def get_full_funnel_conversion(self,filters: dict = None) -> Dict[str, Any]:
         """
         Live query: Full conversion funnel rates.
         - Lead to Enquiry %
@@ -274,7 +289,7 @@ class LeadsRepository:
     # --------------------------------------------------
     # 8️⃣ Vacant Units — Lead Coverage (Last 30 Days)
     # --------------------------------------------------
-    def get_vacant_units_lead_coverage(self) -> Dict[str, Any]:
+    def get_vacant_units_lead_coverage(self,filters: dict = None) -> Dict[str, Any]:
         """
         Live query: How well vacant units are covered by recent leads.
         Looks at leads created in the last 30 days.
@@ -330,7 +345,7 @@ class LeadsRepository:
     # --------------------------------------------------
     # 9️⃣ Vacant Units — High Leads but Low Conversion
     # --------------------------------------------------
-    def get_vacant_units_high_leads_low_conversion(self) -> List[Dict[str, Any]]:
+    def get_vacant_units_high_leads_low_conversion(self,filters: dict = None) -> List[Dict[str, Any]]:
         """
         Live query: Vacant units that attract hot leads (LEADS_RATINGS = 7)
         but have a low conversion rate to tenant.
