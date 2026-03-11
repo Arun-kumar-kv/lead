@@ -119,7 +119,24 @@ class LeadsDashboardService:
             ]
         }
 
-
+    @staticmethod
+    def _shape_active_inactive(data: dict) -> dict:
+        total = data["total"]
+        return {
+            "title": "Active vs Inactive Leads",
+            "units": [
+                {
+                    "name": "Active",
+                    "value": data["active_leads"],
+                    "percentage": data["active_pct"],
+                },
+                {
+                    "name": "Inactive",
+                    "value": data["inactive_leads"],
+                    "percentage": data["inactive_pct"],
+                },
+            ]
+        }
 
 
 
@@ -194,7 +211,7 @@ class LeadsDashboardService:
             # },
             "vacant_unit_coverage":  vacant_coverage,
             "low_conversion_units":  low_conversion_units,
-            "active_inactive":   active_inactive,
+            "active_inactive":   self._shape_active_inactive(active_inactive),
             "new_leads_periods": new_leads_periods,
             "leads_by_channel": {"title": "Leads by Channel","units": leads_by_channel,},
             "ratings_breakdown": self._shape_ratings_breakdown(ratings_breakdown),
