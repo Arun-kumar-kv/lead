@@ -565,23 +565,42 @@ class LeadsRepository:
         query = (
             self.db.query(
                 EqLsLeadsRatings.RATINGS.label("rating"),
-                func.count(EqLsLeads.ID).label("lead_count"),
+                func.count(EqLsLeadsEnquiry.ID).label("lead_count"),
             )
             .outerjoin(
-                EqLsLeads,
-                EqLsLeads.LEADS_RATINGS == EqLsLeadsRatings.ID,
+                EqLsLeadsEnquiry,
+                EqLsLeadsEnquiry.enquiry_rating == EqLsLeadsRatings.ID,
             )
-            .filter(EqLsLeads.status == True)
-            .group_by(EqLsLeadsRatings.RATINGS)
+            .group_by(EqLsLeadsRatings.ID, EqLsLeadsRatings.RATINGS)
         )
-        query = self._apply_filters(query, filters or {})
-        results = query.order_by(func.count(EqLsLeads.ID).desc()).all()
+        results = query.order_by(func.count(EqLsLeadsEnquiry.ID).desc()).all()
 
         return [
             {"rating": row.rating, "lead_count": row.lead_count}
             for row in results
-            if row.rating
+            if row.lead_count > 0
         ]
+    # def get_leads_by_ratings_live(self, filters: dict = None) -> List[Dict[str, Any]]:
+    #     query = (
+    #         self.db.query(
+    #             EqLsLeadsRatings.RATINGS.label("rating"),
+    #             func.count(EqLsLeads.ID).label("lead_count"),
+    #         )
+    #         .outerjoin(
+    #             EqLsLeads,
+    #             EqLsLeads.LEADS_RATINGS == EqLsLeadsRatings.ID,
+    #         )
+    #         .filter(EqLsLeads.status == True)
+    #         .group_by(EqLsLeadsRatings.RATINGS)
+    #     )
+    #     query = self._apply_filters(query, filters or {})
+    #     results = query.order_by(func.count(EqLsLeads.ID).desc()).all()
+
+    #     return [
+    #         {"rating": row.rating, "lead_count": row.lead_count}
+    #         for row in results
+    #         if row.rating
+    #     ]
 
     # 4️⃣ Recent Leads
     def get_recent_leads_live(self, limit: int = 10, filters: dict = None) -> List[Dict[str, Any]]:
@@ -897,24 +916,49 @@ class LeadsRepository:
         query = (
             self.db.query(
                 EqLsLeadsChannel.CHANNEL.label("channel"),
-                func.count(EqLsLeads.ID).label("count"),
+                func.count(EqLsLeadsEnquiry.ID).label("count"),
             )
-            .join(EqLsLeads, EqLsLeads.LEADS_CHANNEL == EqLsLeadsChannel.ID)
-            .filter(EqLsLeads.status == True)
+            .outerjoin(EqLsLeadsEnquiry, EqLsLeadsEnquiry.enquiry_channel == EqLsLeadsChannel.ID)
         )
-        query = self._apply_filters(query, filters or {})
         results = (
             query
-            .group_by(EqLsLeadsChannel.CHANNEL)
-            .order_by(func.count(EqLsLeads.ID).desc())
+            .group_by(EqLsLeadsChannel.ID, EqLsLeadsChannel.CHANNEL)
+            .order_by(func.count(EqLsLeadsEnquiry.ID).desc())
             .all()
         )
         total = sum(row.count for row in results)
         return [
             {
-                "channel":     row.channel,
-                "count":       row.count,
-                "percentage":  round(row.count * 100.0 / total, 2) if total else 0.0,
+                "channel":    row.channel,
+                "count":      row.count,
+                "percentage": round(row.count * 100.0 / total, 2) if total else 0.0,
             }
             for row in results
+            if row.count > 0  # skip channels with zero enquiries
         ]
+        
+    # def get_leads_by_channel(self, filters: dict = None) -> List[Dict[str, Any]]:
+    #     query = (
+    #         self.db.query(
+    #             EqLsLeadsChannel.CHANNEL.label("channel"),
+    #             func.count(EqLsLeads.ID).label("count"),
+    #         )
+    #         .join(EqLsLeads, EqLsLeads.LEADS_CHANNEL == EqLsLeadsChannel.ID)
+    #         .filter(EqLsLeads.status == True)
+    #     )
+    #     query = self._apply_filters(query, filters or {})
+    #     results = (
+    #         query
+    #         .group_by(EqLsLeadsChannel.CHANNEL)
+    #         .order_by(func.count(EqLsLeads.ID).desc())
+    #         .all()
+    #     )
+    #     total = sum(row.count for row in results)
+    #     return [
+    #         {
+    #             "channel":     row.channel,
+    #             "count":       row.count,
+    #             "percentage":  round(row.count * 100.0 / total, 2) if total else 0.0,
+    #         }
+    #         for row in results
+    #     ]
