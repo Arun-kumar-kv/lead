@@ -1,5 +1,5 @@
 # ============================================================
-# TERP Leads Analytics Dashboard - Dockerfile
+# Leads Analytics Dashboard - Dockerfile (PostgreSQL)
 # ============================================================
 
 FROM python:3.11-slim
@@ -8,9 +8,10 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Install system dependencies
+# libpq-dev is required for psycopg2 (PostgreSQL client)
 RUN apt-get update && apt-get install -y \
     gcc \
-    default-libmysqlclient-dev \
+    libpq-dev \
     pkg-config \
     curl \
     && rm -rf /var/lib/apt/lists/*
@@ -28,12 +29,12 @@ RUN adduser --disabled-password --gecos "" appuser && \
 USER appuser
 
 # Expose ports
-EXPOSE 8000
+EXPOSE 8200
 EXPOSE 8501
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD curl -f http://localhost:8200/health || exit 1
 
 # Default command - run FastAPI
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8200", "--reload"]
