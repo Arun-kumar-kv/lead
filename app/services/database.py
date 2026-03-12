@@ -7,13 +7,13 @@ import os
 load_dotenv()
 
 DB_USER = os.getenv("DB_USERNAME")
-DB_PASSWORD = quote_plus(os.getenv("DB_PASSWORD"))
+DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_HOST = os.getenv("DB_HOST")
 DB_PORT = os.getenv("DB_PORT", "3401")
 DB_NAME = os.getenv("DB_NAME")
 
 DATABASE_URL = (
-    f"mysql+pymysql://{DB_USER}:"
+    f"postgresql+psycopg2://{DB_USER}:"
     f"{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/"
     f"{DB_NAME}"
 )

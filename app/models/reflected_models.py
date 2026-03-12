@@ -77,16 +77,32 @@ def _get_class(table_name: str):
 
 REQUIRED_TABLES = {
     # TERP_LEADS core tables
-    "TerpLeads":             "TERP_LEADS",
-    "TerpLeadsConversion":   "TERP_LEADS_CONVERSION",
-    "TerpLeadsChannel":      "TERP_LEADS_CHANNEL",
-    "TerpLeadsRatings":      "TERP_LEADS_RATINGS",
-    "TerpLeadsStatus":       "TERP_LEADS_STATUS",
+    "EqLsLeads":                "eq_ls_leads",
+    "EqLsLeadsConversion":      "eq_ls_leads_conversion",
+    "EqLsLeadsChannel":         "eq_ls_leads_channel",
+    "EqLsLeadsRatings":         "eq_ls_leads_ratings",
+    "EqLsLeadsStatus":          "eq_ls_leads_status",
+    "EqLsLeadsFollowup":        "eq_ls_leads_followup",
+    "EqLsLeadsMeeting":         "eq_ls_leads_meeting",
+    "EqLsLeadsMeetingDocs":     "eq_ls_leads_meeting_docs",
+    "EqLsLeadsMeetingEnquiry":  "eq_ls_leads_meeting_enquiry",
+    "EqLsLeadsMeetingReschedule": "eq_ls_leads_meeting_reschedule",
+    "EqLsLeadsMeetingStatus":   "eq_ls_leads_meeting_status",
+    "EqLsLeadsEnquiry":         "eq_ls_leads_enquiry",
+    "EqLsLeadsEnquiryProp":     "eq_ls_leads_enquiry_prop",
+    "EqLsLeadsEnquiryPropUnit": "eq_ls_leads_enquiry_prop_unit",
+    "EqLsLeadsAttendees":       "eq_ls_leads_attendees",
+    "EqLsLeadsAdditionalContacts": "eq_ls_leads_additional_contacts",
+    "EqLsLeadAssignees":        "eq_ls_lead_assignees",
+    "EqLsLeadInterestLevels":   "eq_ls_lead_interest_levels",
+    "EqLsLeadResourceHistory":  "eq_ls_lead_resource_history",
+    "EqLsLeadStaging":          "eq_ls_lead_staging",
+    "EqLsLeadsRescheduleAttendees": "eq_ls_leads_reschedule_attendees",
     # TERP_LS listing tables
-    "TerpLsLeadsEnquiry":        "TERP_LS_LEADS_ENQUIRY",
-    "TerpLsPropertyUnit":        "TERP_LS_PROPERTY_UNIT",
-    "TerpLsPropertyUnitStatus":  "TERP_LS_PROPERTY_UNIT_STATUS",
-    "TerpLsProperty":            "TERP_LS_PROPERTY",
+    
+    "EqLsPropertyUnit":        "eq_ls_property_unit",
+    "EqLsPropertyUnitStatus":  "eq_ls_property_unit_status",
+    "EqLsProperty":            "eq_ls_property",
 }
 
 available = list(Base.classes.keys())
