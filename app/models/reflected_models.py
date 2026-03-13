@@ -103,6 +103,7 @@ REQUIRED_TABLES = {
     "EqLsPropertyUnit":        "eq_ls_property_unit",
     "EqLsPropertyUnitStatus":  "eq_ls_property_unit_status",
     "EqLsProperty":            "eq_ls_property",
+    "EqLsTenantType":           "eq_ls_tenant_type"
 }
 
 available = list(Base.classes.keys())

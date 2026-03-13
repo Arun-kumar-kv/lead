@@ -137,7 +137,24 @@ class LeadsDashboardService:
                 },
             ]
         }
-
+    @staticmethod
+    def _shape_leads_by_type(data: list) -> dict:
+        """
+        Shapes lead type distribution for waffle/icon-array chart.
+        Returns percentage per type for frontend rendering.
+        Example: Individual 64.7%, Company 35.3%
+        """
+        return {
+            "title": "Lead Type Distribution",
+            "units": [
+                {
+                    "type":       row["type"],
+                    "count":      row["count"],
+                    "percentage": row["percentage"],
+                }
+                for row in data
+            ]
+        }
 
 
     def get_dashboard_data(self,property_id: int = None,property_type: str = None,date_from: str = None,date_to: str = None,) -> Dict[str, Any]:
@@ -171,6 +188,9 @@ class LeadsDashboardService:
         active_inactive      = self.leads_repo.get_active_inactive_leads_count(filters)
         new_leads_periods    = self.leads_repo.get_new_leads_periods(filters)
         leads_by_channel = self.leads_repo.get_leads_by_channel(filters)
+        leads_by_type        = self.leads_repo.get_leads_by_type(filters) 
+        leads_by_category = self.leads_repo.get_leads_by_category(filters)
+        vip_stats = self.leads_repo.get_vip_leads_stats(filters) 
         metrics_data = {
                 "total_leads":      total_leads,
                 "todays_new_leads": todays_new_leads,
@@ -214,9 +234,13 @@ class LeadsDashboardService:
             "active_inactive":   self._shape_active_inactive(active_inactive),
             "new_leads_periods": new_leads_periods,
             "leads_by_channel": {"title": "Leads by Channel","units": leads_by_channel,},
+            "leads_by_type":       self._shape_leads_by_type(leads_by_type), 
+            "leads_by_category": {"title": "Leads by Category","units": leads_by_category,},
+            "vip_leads": {"title": "VIP Leads","vip_count":   vip_stats["vip_count"],"total_leads": vip_stats["total_leads"],"vip_pct":     vip_stats["vip_pct"],},
             "ratings_breakdown": self._shape_ratings_breakdown(ratings_breakdown),
             "recent_leads": self._shape_recent_leads(recent_leads),
 
 
             "last_updated": datetime.utcnow().isoformat(),
         }
+    
