@@ -7,6 +7,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, case, text, and_, distinct, literal_column
 from typing import Dict, List, Any
 from datetime import datetime, date, timedelta
+from sqlalchemy import Date, Interval
+from sqlalchemy.sql.expression import cast
+from dateutil.relativedelta import relativedelta  
 from app.models.reflected_models import (
     EqLsLeads,
     EqLsLeadsConversion,
@@ -537,3 +540,52 @@ class LeadsRepository:
             "total_leads": total,
             "vip_pct":     round(vip_count * 100.0 / total, 1) if total else 0.0,
         }
+    # 1️⃣6️⃣ Lead Acquisition Rate — grouped by day/week/month
+
+
+    def get_lead_acquisition_rate(self, period: str = "month", filters: dict = None) -> List[Dict[str, Any]]:
+        today = date.today()
+        six_months_ago = today - relativedelta(months=6)
+
+        # Generate all months in range, then left join actual counts
+        month_series = self.db.query(
+            func.generate_series(
+                func.date_trunc("month", func.cast(six_months_ago, Date)),
+                func.date_trunc("month", func.cast(today, Date)),
+                func.cast("1 month", Interval),
+            ).label("month")
+        ).subquery()
+
+        lead_counts = (
+            self.db.query(
+                func.date_trunc("month", EqLsLeads.INQUIRY_DATE).label("month"),
+                func.count(EqLsLeads.ID).label("count"),
+            )
+            .filter(
+                EqLsLeads.status == True,
+                EqLsLeads.INQUIRY_DATE.isnot(None),
+                EqLsLeads.INQUIRY_DATE >= six_months_ago,
+                EqLsLeads.INQUIRY_DATE <= today,
+            )
+            .group_by(func.date_trunc("month", EqLsLeads.INQUIRY_DATE))
+            .subquery()
+        )
+
+        results = (
+            self.db.query(
+                func.to_char(month_series.c.month, "YYYY-MM").label("period"),
+                func.coalesce(lead_counts.c.count, 0).label("count"),
+            )
+            .outerjoin(lead_counts, month_series.c.month == lead_counts.c.month)
+            .order_by(month_series.c.month)
+            .all()
+        )
+
+        rows = [{"period": r.period, "count": r.count} for r in results]
+        for i, row in enumerate(rows):
+            prev = rows[i - 1]["count"] if i > 0 else None
+            row["growth_pct"] = (
+                round((row["count"] - prev) * 100.0 / prev, 1)
+                if prev and prev > 0 else None
+            )
+        return rows
