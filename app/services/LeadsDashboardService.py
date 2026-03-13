@@ -156,6 +156,17 @@ class LeadsDashboardService:
             ]
         }
 
+    @staticmethod
+    def _shape_new_leads_periods(data: dict) -> dict:
+        return {
+            "title": "New Leads",
+            "units": [
+                {"label": "Today",      "count": data["leads_today"]},
+                {"label": "This Week",  "count": data["leads_this_week"]},
+                {"label": "This Month", "count": data["leads_this_month"]},
+            ]
+        }
+
 
     def get_dashboard_data(self,property_id: int = None,property_type: str = None,date_from: str = None,date_to: str = None,) -> Dict[str, Any]:
         """Get full dashboard data"""
@@ -191,6 +202,7 @@ class LeadsDashboardService:
         leads_by_type        = self.leads_repo.get_leads_by_type(filters) 
         leads_by_category = self.leads_repo.get_leads_by_category(filters)
         vip_stats = self.leads_repo.get_vip_leads_stats(filters) 
+        
         metrics_data = {
                 "total_leads":      total_leads,
                 "todays_new_leads": todays_new_leads,
@@ -232,7 +244,7 @@ class LeadsDashboardService:
             "vacant_unit_coverage":  vacant_coverage,
             "low_conversion_units":  low_conversion_units,
             "active_inactive":   self._shape_active_inactive(active_inactive),
-            "new_leads_periods": new_leads_periods,
+            "new_leads_periods": self._shape_new_leads_periods(new_leads_periods),
             "leads_by_channel": {"title": "Leads by Channel","units": leads_by_channel,},
             "leads_by_type":       self._shape_leads_by_type(leads_by_type), 
             "leads_by_category": {"title": "Leads by Category","units": leads_by_category,},
