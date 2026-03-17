@@ -1,9 +1,6 @@
-# ============================================================
 # Leads Analytics Dashboard - Docker Compose (PostgreSQL)
 # ============================================================
-
 services:
-
   # ----------------------------------------------------------
   # FastAPI Backend
   # ----------------------------------------------------------
@@ -12,13 +9,13 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: eq_api
-    command: uvicorn main:app --host 0.0.0.0 --port 8200 --reload
+    command: uvicorn main:app --host 0.0.0.0 --port 8200
     ports:
       - "8200:8200"
     env_file:
       - .env
     environment:
-      - DB_HOST=postgres        # Points to the PostgreSQL service below
+      - API_ENV=production
     volumes:
       - .:/app
     depends_on:
@@ -42,12 +39,13 @@ services:
     env_file:
       - .env
     environment:
-      - DB_HOST=postgres
+      - API_ENV=production
       - API_BASE_URL=http://api:8200
     volumes:
       - .:/app
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     networks:
       - eq_network
     restart: unless-stopped
@@ -59,14 +57,14 @@ services:
     image: postgres:15
     container_name: eq_postgres
     ports:
-      - "5432:5432"
+      - "5433:5432"           # host: 5433 → container: 5432
     environment:
       POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro   # Optional: seed SQL
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_NAME}"]
       interval: 10s
@@ -78,7 +76,7 @@ services:
     restart: unless-stopped
 
   # ----------------------------------------------------------
-  # pgAdmin - PostgreSQL GUI (replaces Adminer)
+  # pgAdmin - PostgreSQL GUI
   # ----------------------------------------------------------
   pgadmin:
     image: dpage/pgadmin4:latest
@@ -86,10 +84,11 @@ services:
     ports:
       - "8080:80"
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@admin.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - eq_network
     restart: unless-stopped

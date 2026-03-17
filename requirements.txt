@@ -8,3 +8,6 @@ sqlacodegen
 streamlit
 plotly
 dotenv
+scikit-learn
+statsmodels
+prophet

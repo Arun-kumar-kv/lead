@@ -42,6 +42,7 @@ class LeadsDashboardService:
             })
         return {
             "title": "Ratings Breakdown",
+            "type":"Horizontal bar / grid",
             "units": units,
         }
     
@@ -76,6 +77,7 @@ class LeadsDashboardService:
     def _shape_recent_leads(leads: list) -> dict:
         return {
             "title": "Recent Leads",
+            "type":"Data table",
             "headers": [
                 {"title": "Leads Code",       "dataIndex": "leads_code",       "key": "leads_code"},
                 {"title": "Name",             "dataIndex": "name",             "key": "name"},
@@ -100,6 +102,7 @@ class LeadsDashboardService:
 
         return {
             "title": "Lead Conversion ",
+            "type":"conversion funnel",
             "units": [
                 {
                     "name": "Total Leads",
@@ -124,6 +127,7 @@ class LeadsDashboardService:
         total = data["total"]
         return {
             "title": "Active vs Inactive Leads",
+            "type":"Donut chart",
             "units": [
                 {
                     "name": "Active",
@@ -146,6 +150,7 @@ class LeadsDashboardService:
         """
         return {
             "title": "Lead Type Distribution",
+            "type":"Waffle / icon-array chart",
             "units": [
                 {
                     "type":       row["type"],
@@ -160,6 +165,7 @@ class LeadsDashboardService:
     def _shape_new_leads_periods(data: dict) -> dict:
         return {
             "title": "New Leads",
+            "type":"KPI Cards",
             "units": [
                 {"label": "Today",      "count": data["leads_today"]},
                 {"label": "This Week",  "count": data["leads_this_week"]},
@@ -170,6 +176,7 @@ class LeadsDashboardService:
     def _shape_leads_by_channel(data: list) -> dict:
         return {
             "title": "Leads by Channel",
+            "type":" Horizontal bar chart",                  
             "units": [
                 {"channel": row["channel"], "count": row["count"]}
                 for row in data
@@ -179,6 +186,7 @@ class LeadsDashboardService:
     def _shape_acquisition_rate(data: list) -> dict:
         return {
             "title":  "Lead Acquisition Rate",
+            "type":" Line / area chart ",
             "units": [
                 {
                     "period":     row["period"],
@@ -268,9 +276,9 @@ class LeadsDashboardService:
             "new_leads_periods": self._shape_new_leads_periods(new_leads_periods),
             "leads_by_channel": self._shape_leads_by_channel(leads_by_channel),
             "leads_by_type":       self._shape_leads_by_type(leads_by_type), 
-            "leads_by_category": {"title": "Leads by Category","units": leads_by_category,},
+            "leads_by_category": {"title": "Leads by Category","type":"Waffle / icon-array chart","units": leads_by_category,},
             "lead_acquisition_rate": self._shape_acquisition_rate(acquisition_rate),
-            "vip_leads": {"title": "VIP Leads","vip_count":   vip_stats["vip_count"],"total_leads": vip_stats["total_leads"],"vip_pct":     vip_stats["vip_pct"],},
+            "vip_leads": {"title": "VIP Leads","type":"Badge card","vip_count":   vip_stats["vip_count"],"total_leads": vip_stats["total_leads"],"vip_pct":     vip_stats["vip_pct"],},
             "ratings_breakdown": self._shape_ratings_breakdown(ratings_breakdown),
             "recent_leads": self._shape_recent_leads(recent_leads),
 

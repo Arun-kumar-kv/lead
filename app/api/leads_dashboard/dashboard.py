@@ -1,10 +1,16 @@
 # app/api/leads_dashboard/dashboard.py
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends,Query
 from sqlalchemy.orm import Session
 from app.services.database import get_db
 from app.services.LeadsDashboardService import LeadsDashboardService
 from app.repositories.leads_repo import LeadsRepository
-
+from app.services.LeadsForecastService import LeadsForecastService
+from app.schemas.forecast_schemas import (
+    ForecastResponse,
+    ActualsResponse,
+    CustomForecastRequest,
+    ModelName,
+)
 router = APIRouter()
 
 @router.get("/")
@@ -120,7 +126,30 @@ async def get_leads_by_channel(db: Session = Depends(get_db)):
     }
 
 
-
+#forecast
+@router.get("/forecast/actuals", response_model=ActualsResponse)
+async def get_forecast_actuals(db: Session = Depends(get_db)):
+    """Raw monthly lead counts used as forecast training data."""
+    return LeadsForecastService(db).get_actuals()
+ 
+@router.get("/forecast", response_model=ForecastResponse)
+async def get_forecast(
+    months: int       = Query(default=4, ge=1, le=12, description="Months ahead to forecast"),
+    model:  ModelName = Query(default="ensemble",     description="linear | arima | prophet | ensemble"),
+    db: Session = Depends(get_db),
+):
+    """Forecast lead volume for the next N months with 70% confidence intervals."""
+    return LeadsForecastService(db).get_forecast(months=months, model=model)
+ 
+@router.post("/forecast/custom", response_model=ForecastResponse)
+async def get_forecast_custom(body: CustomForecastRequest, db: Session = Depends(get_db)):
+    """Forecast with a custom training window e.g. train_from: 2026-01-01."""
+    return LeadsForecastService(db).get_forecast(
+        months=body.months,
+        model=body.model,
+        train_from=body.train_from,
+        train_to=body.train_to,
+    )
 
 
 

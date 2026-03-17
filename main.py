@@ -70,15 +70,7 @@ app = FastAPI(
 # CORS Middleware - Allow frontend connections
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:8501",      # Streamlit
-        "http://127.0.0.1:8501",
-        "http://localhost:8080",
-        # Add your production URLs here
-        # "https://your-domain.com",
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
