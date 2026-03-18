@@ -241,6 +241,44 @@ class LeadsRepository:
         }
 
     # 8️⃣ Vacant Units — Lead Coverage (Last 30 Days)
+    # def get_vacant_units_lead_coverage(self, filters: dict = None) -> Dict[str, Any]:
+    #     query = (
+    #         self.db.query(
+    #             func.count(distinct(EqLsPropertyUnit.ID)).label("total_vacant_units"),
+    #             func.count(distinct(EqLsLeadsEnquiry.UNIT_ID)).label("vacant_units_with_leads"),
+    #         )
+    #         .join(
+    #             EqLsPropertyUnitStatus,
+    #             EqLsPropertyUnit.STATUS == EqLsPropertyUnitStatus.ID
+    #         )
+    #         .outerjoin(
+    #             EqLsLeadsEnquiry,
+    #             EqLsLeadsEnquiry.UNIT_ID == EqLsPropertyUnit.ID
+    #         )
+    #         .filter(EqLsPropertyUnitStatus.STATUS == "Available")
+    #     )
+    #     result = query.one()
+
+    #     total_vacant     = result.total_vacant_units or 0
+    #     units_with_leads = result.vacant_units_with_leads or 0
+    #     pct_covered      = round(units_with_leads * 100.0 / total_vacant, 2) if total_vacant else 0.0
+
+    #     if pct_covered == 0:
+    #         verdict = "No Leads at All"
+    #     elif pct_covered < 50:
+    #         verdict = "Insufficient"
+    #     elif pct_covered <= 80:
+    #         verdict = "Sufficient"
+    #     else:
+    #         verdict = "Well Covered"
+
+    #     return {
+    #         "total_vacant_units":        total_vacant,
+    #         "vacant_units_with_leads":   units_with_leads,
+    #         "vacant_units_with_no_leads": total_vacant - units_with_leads,
+    #         "pct_units_covered":         pct_covered,
+    #         "sufficiency_verdict":       verdict,
+    #     }
     def get_vacant_units_lead_coverage(self, filters: dict = None) -> Dict[str, Any]:
         query = (
             self.db.query(
@@ -257,6 +295,7 @@ class LeadsRepository:
             )
             .filter(EqLsPropertyUnitStatus.STATUS == "Available")
         )
+        query  = self._apply_filters(query, filters or {})
         result = query.one()
 
         total_vacant     = result.total_vacant_units or 0
@@ -273,13 +312,12 @@ class LeadsRepository:
             verdict = "Well Covered"
 
         return {
-            "total_vacant_units":        total_vacant,
-            "vacant_units_with_leads":   units_with_leads,
+            "total":                      total_vacant,
+            "value":                      units_with_leads,
             "vacant_units_with_no_leads": total_vacant - units_with_leads,
-            "pct_units_covered":         pct_covered,
-            "sufficiency_verdict":       verdict,
+            "percentage":                 pct_covered,
+            "sufficiency_verdict":        verdict,
         }
-
     # 9️⃣ Vacant Units — High Leads but Low Conversion
     def get_vacant_units_high_leads_low_conversion(self, filters: dict = None) -> List[Dict[str, Any]]:
         HOT_RATING_ID = 7

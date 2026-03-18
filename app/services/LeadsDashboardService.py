@@ -10,25 +10,46 @@ class LeadsDashboardService:
     def __init__(self, db: Session):
         self.db = db
         self.leads_repo = LeadsRepository(db)
-
     @staticmethod
     def _shape_conversion_funnel(breakdown: Dict[str, int]) -> Dict[str, Any]:
-        """
-        Converts any flat {stage: count} dict into block-list format.
-        Fully dynamic — no hardcoded label map.
-        Only renames the synthetic 'total_leads' key → 'Total Leads'.
-        """
+        FUNNEL_ORDER = ["total_leads", "Engaged Lead", "Convert to Enquiry", "Convert to Tenant"]
+
+        ordered = sorted(
+            breakdown.items(),
+            key=lambda x: FUNNEL_ORDER.index(x[0]) if x[0] in FUNNEL_ORDER else 99
+        )
+
         units = []
-        for key, val in breakdown.items():
+        for key, val in ordered:
             label = "Total Leads" if key == "total_leads" else key
             units.append({
                 "block": label,
                 "positiveValue": val,
             })
+
         return {
-            "title": "Lead's conversion",
+            "title": "Lead's Status",
+            "type":  "Conversion funnel",
             "units": units,
         }
+    # @staticmethod
+    # def _shape_conversion_funnel(breakdown: Dict[str, int]) -> Dict[str, Any]:
+    #     """
+    #     Converts any flat {stage: count} dict into block-list format.
+    #     Fully dynamic — no hardcoded label map.
+    #     Only renames the synthetic 'total_leads' key → 'Total Leads'.
+    #     """
+    #     units = []
+    #     for key, val in breakdown.items():
+    #         label = "Total Leads" if key == "total_leads" else key
+    #         units.append({
+    #             "block": label,
+    #             "positiveValue": val,
+    #         })
+    #     return {
+    #         "title": "Lead's conversion",
+    #         "units": units,
+    #     }
     @staticmethod
     def _shape_ratings_breakdown(ratings: list) -> dict:
         total = sum(r["lead_count"] for r in ratings)
@@ -46,33 +67,33 @@ class LeadsDashboardService:
             "units": units,
         }
     
-    @staticmethod
-    def _shape_kpi_indicators(metrics: dict, funnel_rates: dict) -> dict:
-        return {
-            "title": "KPI Indicators",
-            "units": [
-                {
-                    "label": "Total Leads",
-                    "value": metrics["total_leads"],
-                },
-                {
-                    "label": "Today's New Leads",
-                    "value": metrics["todays_new_leads"],
-                },
-                {
-                    "label": "Lead to Enquiry",
-                    "value": funnel_rates["lead_to_enquiry_pct"],
-                },
-                {
-                    "label": "Enquiry to Tenant",
-                    "value": funnel_rates["enquiry_to_tenant_pct"],
-                },
-                {
-                    "label": "Lead to Tenant",
-                    "value": funnel_rates["lead_to_tenant_conversion_pct"],
-                },
-            ]
-        }
+    # @staticmethod
+    # def _shape_kpi_indicators(metrics: dict, funnel_rates: dict) -> dict:
+    #     return {
+    #         "title": "KPI Indicators",
+    #         "units": [
+    #             {
+    #                 "label": "Total Leads",
+    #                 "value": metrics["total_leads"],
+    #             },
+    #             {
+    #                 "label": "Today's New Leads",
+    #                 "value": metrics["todays_new_leads"],
+    #             },
+    #             {
+    #                 "label": "Lead to Enquiry",
+    #                 "value": funnel_rates["lead_to_enquiry_pct"],
+    #             },
+    #             {
+    #                 "label": "Enquiry to Tenant",
+    #                 "value": funnel_rates["enquiry_to_tenant_pct"],
+    #             },
+    #             {
+    #                 "label": "Lead to Tenant",
+    #                 "value": funnel_rates["lead_to_tenant_conversion_pct"],
+    #             },
+    #         ]
+    #     }
     @staticmethod
     def _shape_recent_leads(leads: list) -> dict:
         return {
@@ -196,6 +217,27 @@ class LeadsDashboardService:
                 for row in data
             ]
         }
+    @staticmethod
+    def _shape_vacant_unit_coverage(data: dict) -> dict:
+        total   = data.get("total", 0)
+        covered = data.get("value", 0)
+        pct     = round((covered / total) * 100, 2) if total > 0 else 0.0
+        if pct >= 50:
+            status, color = "Sufficient",    "green"
+        elif pct >= 20:
+            status, color = "Moderate",      "orange"
+        else:
+            status, color = "Insufficient",  "red"
+        return {
+            "title":        "Lead Coverage of Vacant Units",
+            "type":         "Progress / coverage card",
+            "total":        total,
+            "value":        covered,
+            "percentage":   pct,
+            "status":       status,
+            "status_color": color,
+            "display_text": f"{covered} / {total} units",
+        }
     def get_dashboard_data(self,property_id: int = None,property_type: str = None,date_from: str = None,date_to: str = None,) -> Dict[str, Any]:
         """Get full dashboard data"""
         filters = {
@@ -254,14 +296,14 @@ class LeadsDashboardService:
 
 
         return {
-            "metrics": {
-                "total_leads":      total_leads,
-                "todays_new_leads": todays_new_leads,
-                "converted_leads":  converted,
-                "conversion_rate":  conversion_rate,
-            },
+            # "metrics": {
+            #     "total_leads":      total_leads,
+            #     "todays_new_leads": todays_new_leads,
+            #     "converted_leads":  converted,
+            #     "conversion_rate":  conversion_rate,
+            # },
             "conversion_funnel": self._shape_conversion_funnel(conversion_breakdown),
-            "kpi_indicators":    self._shape_kpi_indicators(metrics_data, funnel_rates_data), 
+            # "kpi_indicators":    self._shape_kpi_indicators(metrics_data, funnel_rates_data), 
             "lead_funnel_rates": self._shape_lead_funnel_rates(metrics_data, funnel_rates_data),
             # "funnel_rates": {
             #     "lead_to_enquiry_pct":           full_funnel["lead_to_enquiry_pct"],
@@ -270,7 +312,7 @@ class LeadsDashboardService:
             #     "converted_to_enquiry":          lead_to_enquiry["converted_to_enquiry"],
             #     "converted_to_tenant":           full_funnel["converted_to_tenant"],
             # },
-            "vacant_unit_coverage":  vacant_coverage,
+            "vacant_unit_coverage":  self._shape_vacant_unit_coverage(vacant_coverage),
             "low_conversion_units":  low_conversion_units,
             "active_inactive":   self._shape_active_inactive(active_inactive),
             "new_leads_periods": self._shape_new_leads_periods(new_leads_periods),
