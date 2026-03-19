@@ -29,7 +29,7 @@ class LeadsDashboardService:
 
         return {
             "title": "Lead's Status",
-            "type":  "Process Flow Funnel/horizontal funnel",
+            "type":  "Conversion funnel",
             "units": units,
         }
     # @staticmethod
@@ -146,7 +146,7 @@ class LeadsDashboardService:
 
         return {
             "title": "Lead Conversion ",
-            "type":"Waterfall chart",
+            "type":"Process Flow Funnel/horizontal funnel",
             "units": [
                 {
                     "name": "Total Leads",
