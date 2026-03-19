@@ -341,7 +341,7 @@ class LeadsDashboardService:
             "new_leads_periods": self._shape_new_leads_periods(new_leads_periods),
             "leads_by_channel": self._shape_leads_by_channel(leads_by_channel),
             "leads_by_type":       self._shape_leads_by_type(leads_by_type), 
-            "leads_by_category": {"title": "Leads by Category","type":"Treemap","units": leads_by_category,},
+            "leads_by_category": {"title": "Leads by Category","type":"Donut chart","units": leads_by_category,},
             "lead_acquisition_rate": self._shape_acquisition_rate(acquisition_rate),
             "vip_leads": {"title": "VIP Leads","type":"Badge card","vip_count":   vip_stats["vip_count"],"total_leads": vip_stats["total_leads"],"vip_pct":     vip_stats["vip_pct"],},
             "ratings_breakdown": self._shape_ratings_breakdown(ratings_breakdown),
