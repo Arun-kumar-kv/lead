@@ -29,7 +29,7 @@ class LeadsDashboardService:
 
         return {
             "title": "Lead's Status",
-            "type":  "Conversion funnel",
+            "type":  "Process Flow Funnel/horizontal funnel",
             "units": units,
         }
     # @staticmethod
@@ -66,7 +66,30 @@ class LeadsDashboardService:
             "type":"Radar / Spider chart ",
             "units": units,
         }
-    
+    @staticmethod
+    def _shape_new_leads_periods(data: dict) -> dict:
+        return {
+            "title": "New Leads",
+            "type": "KPI Cards",
+            "summary": {
+                "label": "This Month",
+                "count": data["leads_this_month"]
+            },
+            "detail": {
+                "today": {
+                    "label": "Today",
+                    "count": data["leads_today"]
+                },
+                "this_week": {
+                    "label": "This Week",
+                    "count": data["leads_this_week"]
+                },
+                "this_month": {
+                    "label": "This Month",
+                    "count": data["leads_this_month"]
+                }
+            }
+        }
     # @staticmethod
     # def _shape_kpi_indicators(metrics: dict, funnel_rates: dict) -> dict:
     #     return {
@@ -182,17 +205,17 @@ class LeadsDashboardService:
             ]
         }
 
-    @staticmethod
-    def _shape_new_leads_periods(data: dict) -> dict:
-        return {
-            "title": "New Leads",
-            "type":"KPI Cards",
-            "units": [
-                {"label": "Today",      "count": data["leads_today"]},
-                {"label": "This Week",  "count": data["leads_this_week"]},
-                {"label": "This Month", "count": data["leads_this_month"]},
-            ]
-        }
+    # @staticmethod
+    # def _shape_new_leads_periods(data: dict) -> dict:
+    #     return {
+    #         "title": "New Leads",
+    #         "type":"KPI Cards",
+    #         "units": [
+    #             {"label": "Today",      "count": data["leads_today"]},
+    #             {"label": "This Week",  "count": data["leads_this_week"]},
+    #             {"label": "This Month", "count": data["leads_this_month"]},
+    #         ]
+    #     }
     @staticmethod
     def _shape_leads_by_channel(data: list) -> dict:
         return {

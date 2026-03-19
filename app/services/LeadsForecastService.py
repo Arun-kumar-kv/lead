@@ -2,16 +2,13 @@
 
 import warnings
 warnings.filterwarnings("ignore")
-
 import numpy as np
 import pandas as pd
 from datetime import date
 from typing import Optional, Tuple
-
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-
 from app.models.reflected_models import EqLsLeads
 from app.schemas.forecast_schemas import (
     ModelName, ForecastResponse, ForecastPoint,
@@ -30,8 +27,6 @@ class LeadsForecastService:
 
     def __init__(self, db: Session):
         self.db = db
-
-    # ------------------------------------------------------------------ public
 
     def get_actuals(self) -> ActualsResponse:
         df = self._fetch_series()
@@ -80,7 +75,7 @@ class LeadsForecastService:
 
         return self._build_response(df, model, months, pred, upper, lower, individual)
 
-    # ------------------------------------------------------------ single entry point for all models
+    #single entry point for all models
 
     def _run_model(
         self, model: str, df: pd.DataFrame, n: int
@@ -98,7 +93,7 @@ class LeadsForecastService:
         else:
             raise ValueError(f"Unknown model: {model!r}")
 
-    # ----------------------------------------------------------------- fitters
+    #  fitters
 
     def _fit_linear(self, df: pd.DataFrame, n: int):
         X     = np.arange(len(df)).reshape(-1, 1)
@@ -145,7 +140,7 @@ class LeadsForecastService:
         lower  = np.maximum(fut["yhat_lower"].values, 0).round().astype(int)
         return pred, upper, lower
 
-    # ----------------------------------------------------------- ensemble helper
+    # ensemble helper
 
     def _average_results(self, individual: dict):
         """Average pred/upper/lower across all individual model results."""
@@ -158,7 +153,7 @@ class LeadsForecastService:
             np.round(np.mean(lowers, axis=0)).astype(int),
         )
 
-    # ---------------------------------------------------------------- data layer
+    # data layer
 
     def _fetch_series(
         self,
@@ -208,7 +203,7 @@ class LeadsForecastService:
         )
         return df
 
-    # -------------------------------------------------------------- response builder
+    #  response builder
 
     def _build_response(
         self,
