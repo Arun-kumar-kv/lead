@@ -319,12 +319,17 @@ class LeadsDashboardService:
 
 
         return {
-            # "metrics": {
-            #     "total_leads":      total_leads,
+            "total_lead_kpi": {
+                "title":"Total_leads",
+                "type": "KPI Cards",
+                "summary": {
+                "label": "Total Leads",
+                "count": total_leads,
+                }
             #     "todays_new_leads": todays_new_leads,
             #     "converted_leads":  converted,
             #     "conversion_rate":  conversion_rate,
-            # },
+            },
             "conversion_funnel": self._shape_conversion_funnel(conversion_breakdown),
             # "kpi_indicators":    self._shape_kpi_indicators(metrics_data, funnel_rates_data), 
             "lead_funnel_rates": self._shape_lead_funnel_rates(metrics_data, funnel_rates_data),

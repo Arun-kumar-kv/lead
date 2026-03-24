@@ -5,7 +5,6 @@ FastAPI endpoints for Revenue & Rent Dashboard
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-
 from app.services.database import get_db
 from app.services.RevenueDashboardService import RevenueDashboardService
 from app.repositories.revenue_repo import RevenueRepository

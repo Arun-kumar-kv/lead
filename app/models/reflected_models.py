@@ -6,8 +6,6 @@ from app.services.database import engine
 
 metadata = MetaData()
 inspector = inspect(engine)
-
-
 # Step 1: Reflect all schemas
 # First attempt: reflect entire schema at once (fast).
 # Fallback: reflect table-by-table, skipping broken ones.
