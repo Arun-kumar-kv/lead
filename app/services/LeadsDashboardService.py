@@ -519,17 +519,46 @@ class LeadsDashboardService:
             ],
         }
 
+    # @staticmethod
+    # def _shape_leads_by_channel(data: list) -> dict:
+    #     return {
+    #         "title": "Leads by Channel",
+    #         "type":  "Horizontal bar chart",
+    #         "units": [
+    #             {"channel": row["channel"], "count": row["count"]}
+    #             for row in data
+    #         ],
+    #     }
     @staticmethod
     def _shape_leads_by_channel(data: list) -> dict:
-        return {
-            "title": "Leads by Channel",
-            "type":  "Horizontal bar chart",
-            "units": [
-                {"channel": row["channel"], "count": row["count"]}
-                for row in data
-            ],
-        }
+        sorted_data = sorted(data, key=lambda x: x["count"], reverse=True)
+        total = sum(row["count"] for row in sorted_data)
 
+        units = []
+        for i, row in enumerate(sorted_data):
+            unit = {
+                "rank":       i + 1,
+                "channel":    row["channel"],
+                "count":      row["count"],
+                "percentage": round((row["count"] / total) * 100, 1) if total > 0 else 0.0,
+                "is_top5":    i < 5,
+            }
+            units.append(unit)
+
+        top5 = units[:5]
+        rest_count = sum(r["count"] for r in units[5:])
+
+        return {
+            "title":        "Leads by Channel",
+            "type":         "Horizontal bar chart",
+            "total_leads":  total,
+            "total_channels": len(units),
+            "summary": {
+                "top5":  top5,
+
+            },
+            "detail": units,
+        }
     @staticmethod
     def _shape_acquisition_rate(data: list) -> dict:
         return {
