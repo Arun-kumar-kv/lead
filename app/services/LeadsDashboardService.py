@@ -550,7 +550,7 @@ class LeadsDashboardService:
 
         return {
             "title":        "Leads by Channel",
-            "type":         "Horizontal bar chart",
+            "type":         "Bubble chart",
             "total_leads":  total,
             "total_channels": len(units),
             "summary": {
