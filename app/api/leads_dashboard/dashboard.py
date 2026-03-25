@@ -2,6 +2,8 @@
 from fastapi import APIRouter, Depends,Query
 from sqlalchemy.orm import Session
 from app.services.database import get_db
+from app.services.redis_client import get_redis
+from app.services.database import SessionFactory  #ADDED
 from app.services.LeadsDashboardService import LeadsDashboardService
 from app.repositories.leads_repo import LeadsRepository
 from app.services.LeadsForecastService import LeadsForecastService
@@ -13,23 +15,43 @@ from app.schemas.forecast_schemas import (
 )
 router = APIRouter()
 
+# @router.get("/")
+# async def get_leads_dashboard(property_id:int = None,property_type: str = None,date_from:str = None,date_to:str = None,db: Session = Depends(get_db)):
+#     """
+#     Get complete leads analytics dashboard
+    
+#     HYBRID APPROACH:
+#     - Real-time: Active leads, today's new leads, current ratings
+#     - Historical: Trends, conversion rates from snapshot tables
+    
+#     Response time: 50-150ms
+#     """
+#     service = LeadsDashboardService(db,session_factory=SessionFactory,redis_client=get_redis(),)#added sessionfactory init and redisclient
+#     return service.get_dashboard_data(property_id=property_id,
+#         property_type=property_type,
+#         date_from=date_from,
+#         date_to=date_to,)
 @router.get("/")
-async def get_leads_dashboard(property_id:int = None,property_type: str = None,date_from:str = None,date_to:str = None,db: Session = Depends(get_db)):
-    """
-    Get complete leads analytics dashboard
-    
-    HYBRID APPROACH:
-    - Real-time: Active leads, today's new leads, current ratings
-    - Historical: Trends, conversion rates from snapshot tables
-    
-    Response time: 50-150ms
-    """
-    service = LeadsDashboardService(db)
-    return service.get_dashboard_data(property_id=property_id,
+async def get_leads_dashboard(
+    property_id: int = None,
+    property_type: str = None,
+    date_from: str = None,
+    date_to: str = None,
+    db: Session = Depends(get_db),
+    redis_client = Depends(get_redis),   # ✅ THIS LINE IS CRITICAL
+):
+    service = LeadsDashboardService(
+        db,
+        session_factory=SessionFactory,
+        redis_client=redis_client
+    )
+
+    return service.get_dashboard_data(
+        property_id=property_id,
         property_type=property_type,
         date_from=date_from,
-        date_to=date_to,)
-
+        date_to=date_to,
+    )
 @router.get("/live/total")
 async def get_total_leads_live(db: Session = Depends(get_db)):
     """Get total active leads (live query)"""
