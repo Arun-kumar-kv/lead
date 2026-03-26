@@ -77,21 +77,7 @@ services:
   # ----------------------------------------------------------
   # Redis Cache
   # ----------------------------------------------------------
-  redis:
-    image: redis:7-alpine
-    container_name: eq_redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - eq_network
-    restart: unless-stopped
+
   # ----------------------------------------------------------
   # pgAdmin - PostgreSQL GUI
   # ----------------------------------------------------------
@@ -113,6 +99,17 @@ services:
 # ----------------------------------------------------------
 # Volumes & Networks
 # ----------------------------------------------------------
+
+services:
+  redis:
+  image: redis:alpine
+  volumes:
+
+    - redis_data:/data
+  # ... other services
+
+  volumes:
+  redis_data: # ← Add this block at the bottom
 volumes:
   postgres_data:
     driver: local
