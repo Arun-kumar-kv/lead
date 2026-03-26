@@ -453,8 +453,33 @@ class LeadsDashboardService:
             },
         }
 
+    # @staticmethod
+    # def _shape_recent_leads(leads: list) -> dict:
+    #     return {
+    #         "title":   "Recent Leads",
+    #         "type":    "Data table",
+    #         "headers": [
+    #             {"title": "Leads Code",       "dataIndex": "leads_code",       "key": "leads_code"},
+    #             {"title": "Name",             "dataIndex": "name",             "key": "name"},
+    #             {"title": "Inquiry Date",     "dataIndex": "inquiry_date",     "key": "inquiry_date"},
+    #             {"title": "Leads Type",       "dataIndex": "leads_type",       "key": "leads_type"},
+    #             {"title": "Channel",          "dataIndex": "channel",          "key": "channel"},
+    #             {"title": "Rating",           "dataIndex": "rating",           "key": "rating"},
+    #             {"title": "Status",           "dataIndex": "status",           "key": "status"},
+    #             {"title": "Conversion Stage", "dataIndex": "conversion_stage", "key": "conversion_stage"},
+    #             {"title": "Property ID",      "dataIndex": "property_id",      "key": "property_id"},
+    #             {"title": "Property Unit",    "dataIndex": "property_unit",    "key": "property_unit"},
+    #             {"title": "Created By",       "dataIndex": "created_by",       "key": "created_by"},
+    #         ],
+    #         "units": leads,
+    #     }
     @staticmethod
     def _shape_recent_leads(leads: list) -> dict:
+        cleaned_leads = [
+            {k: v for k, v in lead.items() if v is not None}
+            for lead in leads
+        ]
+
         return {
             "title":   "Recent Leads",
             "type":    "Data table",
@@ -463,17 +488,10 @@ class LeadsDashboardService:
                 {"title": "Name",             "dataIndex": "name",             "key": "name"},
                 {"title": "Inquiry Date",     "dataIndex": "inquiry_date",     "key": "inquiry_date"},
                 {"title": "Leads Type",       "dataIndex": "leads_type",       "key": "leads_type"},
-                {"title": "Channel",          "dataIndex": "channel",          "key": "channel"},
-                {"title": "Rating",           "dataIndex": "rating",           "key": "rating"},
-                {"title": "Status",           "dataIndex": "status",           "key": "status"},
                 {"title": "Conversion Stage", "dataIndex": "conversion_stage", "key": "conversion_stage"},
-                {"title": "Property ID",      "dataIndex": "property_id",      "key": "property_id"},
-                {"title": "Property Unit",    "dataIndex": "property_unit",    "key": "property_unit"},
-                {"title": "Created By",       "dataIndex": "created_by",       "key": "created_by"},
             ],
-            "units": leads,
+            "units": cleaned_leads,
         }
-
     @staticmethod
     def _shape_lead_funnel_rates(metrics: dict, funnel_rates: dict) -> dict:
         return {
