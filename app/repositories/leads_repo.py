@@ -22,7 +22,9 @@ from app.models.reflected_models import (
     EqLsPropertyUnit,
     EqLsPropertyUnitStatus,
     EqLsProperty,
-    EqLsTenantType
+    EqLsTenantType,
+    EqCity,    
+    TerpUser
 )
 
 
@@ -126,21 +128,24 @@ class LeadsRepository:
                 EqLsLeads.LEADS_CODE,
                 EqLsLeads.NAME,
                 EqLsLeads.INQUIRY_DATE,
-                EqLsLeads.LEADS_TYPE,
+                EqLsTenantType.NAME.label("leads_type"),      # ✅ NAME not TENANT_TYPE
                 EqLsLeadsChannel.CHANNEL,
                 EqLsLeadsRatings.RATINGS,
                 EqLsLeadsStatus.STATUS,
                 EqLsLeadsConversion.CONVERSION.label("conversion_stage"),
                 EqLsLeads.PROPERTY_ID,
                 EqLsLeads.UNIT_ID,
-                EqLsLeads.CITY,
-                EqLsLeads.CREATED_BY,
+                EqCity.NAME.label("city"),                    # ✅ NAME confirmed
+                TerpUser.USERNAME.label("created_by"),        # ✅ USERNAME not NAME
                 EqLsLeads.LAST_UPDATED_AT,
             )
             .outerjoin(EqLsLeadsChannel, EqLsLeadsChannel.ID == EqLsLeads.LEADS_CHANNEL)
             .outerjoin(EqLsLeadsRatings, EqLsLeadsRatings.ID == EqLsLeads.LEADS_RATINGS)
             .outerjoin(EqLsLeadsStatus, EqLsLeadsStatus.ID == EqLsLeads.LEADS_STATUS)
             .outerjoin(EqLsLeadsConversion, EqLsLeadsConversion.ID == EqLsLeads.CONVERSION_STATUS)
+            .outerjoin(EqLsTenantType, EqLsTenantType.ID == EqLsLeads.LEADS_TYPE)
+            .outerjoin(EqCity, EqCity.ID == EqLsLeads.CITY)
+            .outerjoin(TerpUser, TerpUser.ID == EqLsLeads.CREATED_BY)
             .filter(EqLsLeads.status == True)
         )
         query = self._apply_filters(query, filters or {})
@@ -148,22 +153,66 @@ class LeadsRepository:
 
         return [
             {
-                "leads_code": row.LEADS_CODE,
-                "name": row.NAME,
-                "inquiry_date": row.INQUIRY_DATE.isoformat() if row.INQUIRY_DATE else None,
-                "leads_type": row.LEADS_TYPE,
-                "channel": row.CHANNEL,
-                "rating": row.RATINGS,
-                "status": row.STATUS,
+                "leads_code":     row.LEADS_CODE,
+                "name":           row.NAME,
+                "inquiry_date":   row.INQUIRY_DATE.isoformat() if row.INQUIRY_DATE else None,
+                "leads_type":     row.leads_type,        # ✅ "Individual" / "Company"
+                "channel":        row.CHANNEL,
+                "rating":         row.RATINGS,
+                "status":         row.STATUS,
                 "conversion_stage": row.conversion_stage,
-                "property_id": row.PROPERTY_ID,
-                "property_unit": row.UNIT_ID,
-                "city": row.CITY,
-                "created_by": row.CREATED_BY,
+                "property_id":    row.PROPERTY_ID,
+                "property_unit":  row.UNIT_ID,
+                "city":           row.city,              # ✅ "Dubai" etc.
+                "created_by":     row.created_by,        # ✅ "john.doe" etc.
                 "last_updated_at": row.LAST_UPDATED_AT.isoformat() if row.LAST_UPDATED_AT else None,
             }
             for row in results
         ]
+    # def get_recent_leads_live(self, limit: int = 10, filters: dict = None) -> List[Dict[str, Any]]:
+    #     query = (
+    #         self.db.query(
+    #             EqLsLeads.LEADS_CODE,
+    #             EqLsLeads.NAME,
+    #             EqLsLeads.INQUIRY_DATE,
+    #             EqLsLeads.LEADS_TYPE,
+    #             EqLsLeadsChannel.CHANNEL,
+    #             EqLsLeadsRatings.RATINGS,
+    #             EqLsLeadsStatus.STATUS,
+    #             EqLsLeadsConversion.CONVERSION.label("conversion_stage"),
+    #             EqLsLeads.PROPERTY_ID,
+    #             EqLsLeads.UNIT_ID,
+    #             EqLsLeads.CITY,
+    #             EqLsLeads.CREATED_BY,
+    #             EqLsLeads.LAST_UPDATED_AT,
+    #         )
+    #         .outerjoin(EqLsLeadsChannel, EqLsLeadsChannel.ID == EqLsLeads.LEADS_CHANNEL)
+    #         .outerjoin(EqLsLeadsRatings, EqLsLeadsRatings.ID == EqLsLeads.LEADS_RATINGS)
+    #         .outerjoin(EqLsLeadsStatus, EqLsLeadsStatus.ID == EqLsLeads.LEADS_STATUS)
+    #         .outerjoin(EqLsLeadsConversion, EqLsLeadsConversion.ID == EqLsLeads.CONVERSION_STATUS)
+    #         .filter(EqLsLeads.status == True)
+    #     )
+    #     query = self._apply_filters(query, filters or {})
+    #     results = query.order_by(EqLsLeads.INQUIRY_DATE.desc()).limit(limit).all()
+
+    #     return [
+    #         {
+    #             "leads_code": row.LEADS_CODE,
+    #             "name": row.NAME,
+    #             "inquiry_date": row.INQUIRY_DATE.isoformat() if row.INQUIRY_DATE else None,
+    #             "leads_type": row.LEADS_TYPE,
+    #             "channel": row.CHANNEL,
+    #             "rating": row.RATINGS,
+    #             "status": row.STATUS,
+    #             "conversion_stage": row.conversion_stage,
+    #             "property_id": row.PROPERTY_ID,
+    #             "property_unit": row.UNIT_ID,
+    #             "city": row.CITY,
+    #             "created_by": row.CREATED_BY,
+    #             "last_updated_at": row.LAST_UPDATED_AT.isoformat() if row.LAST_UPDATED_AT else None,
+    #         }
+    #         for row in results
+    #     ]
 
     # 5️⃣ Today's Leads
     def get_todays_new_leads_live(self, filters: dict = None) -> int:
