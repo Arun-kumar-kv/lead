@@ -676,3 +676,45 @@ class LeadsRepository:
                 if prev and prev > 0 else None
             )
         return rows
+    
+    def get_total_leads_by_month_year(self, filters: dict = None) -> List[Dict[str, Any]]:
+        MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun",
+                    "Jul","Aug","Sep","Oct","Nov","Dec"]
+
+        MIN_VALID_DATE = datetime(2000, 1, 1)   # ignore anything before year 2000
+
+        year_col  = func.extract("year",  EqLsLeads.INQUIRY_DATE).label("year")
+        month_col = func.extract("month", EqLsLeads.INQUIRY_DATE).label("month")
+
+        query = (
+            self.db.query(
+                year_col,
+                month_col,
+                func.count(EqLsLeads.ID).label("count"),
+            )
+            .filter(
+                EqLsLeads.status == True,
+                EqLsLeads.INQUIRY_DATE.isnot(None),
+                EqLsLeads.INQUIRY_DATE >= MIN_VALID_DATE,  # ← filters out 1970/bad rows
+            )
+        )
+        query = self._apply_filters(query, filters or {})
+
+        results = (
+            query
+            .group_by(year_col, month_col)
+            .order_by(year_col, month_col)
+            .all()
+        )
+
+        return [
+            {
+                "year":       int(row.year),
+                "month":      int(row.month),
+                "month_name": MONTH_NAMES[int(row.month) - 1],
+                "period":     f"{MONTH_NAMES[int(row.month) - 1]} {int(row.year)}",
+                "count":      row.count,
+            }
+            for row in results
+            if row.year is not None and row.month is not None
+        ]

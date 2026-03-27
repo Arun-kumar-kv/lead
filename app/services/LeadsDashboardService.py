@@ -397,17 +397,83 @@ class LeadsDashboardService:
 
     #  Shaping Methods 
 
+    # @staticmethod
+    # def _shape_total_leads_kpi(total_leads: int) -> dict:
+    #     return {
+    #         "title":   "Total Leads",
+    #         "type":    "KPI Cards",
+    #         "summary": {
+    #             "label": "Total Leads",
+    #             "count": total_leads,
+    #         }
+    #     }
     @staticmethod
-    def _shape_total_leads_kpi(total_leads: int) -> dict:
+    def _shape_total_leads_kpi(total_leads: int, monthly_data: list) -> dict:
+        from datetime import datetime
+
+        current_month = datetime.utcnow().month
+        current_year  = str(datetime.utcnow().year)
+
+        # Group by month_num
+        by_month   = {}
+        years_seen = set()
+
+        for row in monthly_data:
+            m_num  = row["month"]
+            m_name = row["month_name"]
+            year   = str(row["year"])
+            count  = row["count"]
+
+            years_seen.add(year)
+            if m_num not in by_month:
+                by_month[m_num] = {"month": m_name, "month_num": m_num}
+            by_month[m_num][year] = count
+
+        # Sort years to find previous and current year
+        sorted_years = sorted(years_seen)
+        prev_year    = sorted_years[0] if len(sorted_years) >= 2 else None
+        curr_year    = sorted_years[-1] if sorted_years else None
+
+        # Build comparison rows ordered Jan → Dec
+        detail = []
+        for m_num in sorted(by_month.keys()):
+            row      = by_month[m_num]
+            prev_val = row.get(prev_year, 0) if prev_year else 0
+            curr_val = row.get(curr_year, 0) if curr_year else 0
+
+            # Future month = current year and month not yet reached
+            is_future = (
+                curr_year == current_year and
+                m_num > current_month
+            )
+
+            entry = {"month": row["month"]}
+
+            if prev_year:
+                entry[f"{prev_year}_count"] = prev_val
+
+            if curr_year:
+                entry[f"{curr_year}_count"] = None if is_future else curr_val
+
+            entry["variance"] = None if is_future else (curr_val - prev_val)
+
+            detail.append(entry)
+
         return {
             "title":   "Total Leads",
             "type":    "KPI Cards",
-            "summary": {
-                "label": "Total Leads",
-                "count": total_leads,
-            }
+            "summary": {"label": "Total Leads", "count": total_leads},
+            "years":   sorted_years,
+            "headers": [
+                {"title": "Month",    "dataIndex": "month",    "key": "month"},
+                *[
+                    {"title": f"{yr} Count", "dataIndex": f"{yr}_count", "key": f"{yr}_count"}
+                    for yr in sorted_years
+                ],
+                {"title": "Variance", "dataIndex": "variance", "key": "variance"},
+            ],
+            "detail": detail,
         }
-
     @staticmethod
     def _shape_conversion_funnel(breakdown: Dict[str, int]) -> Dict[str, Any]:
         FUNNEL_ORDER = ["total_leads", "Engaged Lead", "Convert to Enquiry", "Convert to Tenant"]
@@ -667,6 +733,7 @@ class LeadsDashboardService:
             "leads_by_category":    lambda repo: repo.get_leads_by_category(filters),
             "vip_stats":            lambda repo: repo.get_vip_leads_stats(filters),
             "acquisition_rate":     lambda repo: repo.get_lead_acquisition_rate(period="month", filters=filters),
+             "total_leads_monthly": lambda repo: repo.get_total_leads_by_month_year(filters),
         }
 
         results = {}
@@ -718,7 +785,7 @@ class LeadsDashboardService:
 
         # ④ Shape and return
         data = {
-            "total_lead_kpi":        self._shape_total_leads_kpi(r["total_leads"]),
+            "total_lead_kpi":        self._shape_total_leads_kpi(r["total_leads"],r["total_leads_monthly"]),
             "conversion_funnel":     self._shape_conversion_funnel(r["conversion_breakdown"]),
             "lead_funnel_rates":     self._shape_lead_funnel_rates(metrics_data, funnel_rates_data),
             "vacant_unit_coverage":  self._shape_vacant_unit_coverage(r["vacant_coverage"]),
