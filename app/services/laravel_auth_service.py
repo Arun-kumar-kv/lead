@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import httpx
 from fastapi import HTTPException, status
@@ -15,17 +15,8 @@ class LaravelAuthService:
         self.me_endpoint = settings.LARAVEL_ME_ENDPOINT
         self.timeout = settings.LARAVEL_TIMEOUT_SECONDS
 
-    async def login(
-        self,
-        password: str,
-        username: str | None = None,
-        email: str | None = None,
-    ) -> Dict[str, Any]:
-        payload = {"password": password}
-        if username:
-            payload["username"] = username
-        elif email:
-            payload["email"] = email
+    async def login(self, email: str, password: str) -> Dict[str, Any]:
+        payload = {"email": email, "password": password}
 
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             response = await client.post(f"{self.base_url}{self.login_endpoint}", json=payload)
@@ -65,23 +56,14 @@ class LaravelAuthService:
 
         data = response.json()
         if isinstance(data, dict) and "data" in data and isinstance(data["data"], dict):
-            user = data["data"]
-        elif isinstance(data, dict):
-            user = data
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail="Unexpected response format from Laravel",
-            )
+            return data["data"]
+        if isinstance(data, dict):
+            return data
 
-        user_id = user.get("id")
-        if user_id is None:
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail="Laravel token validated but user id is missing",
-            )
-
-        return user
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Unexpected response format from Laravel",
+        )
 
 
 laravel_auth_service = LaravelAuthService()

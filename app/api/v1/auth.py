@@ -29,32 +29,12 @@ async def get_current_admin(authorization: str = Header(default="")) -> Dict[str
     return await laravel_auth_service.validate_token(token)
 
 
-def _extract_user_id(admin: Dict[str, Any]) -> int | None:
-    user_id = admin.get("id")
-    return user_id if isinstance(user_id, int) else None
-
-
-def _extract_user_email(admin: Dict[str, Any]) -> str | None:
-    user_email = admin.get("email")
-    return user_email if isinstance(user_email, str) else None
-
-
 @router.post("/login", response_model=LaravelLoginResponse)
 async def auth_login(payload: LaravelLoginRequest) -> Dict[str, Any]:
     """
     Proxy Laravel login so FastAPI can always use the latest Sanctum token.
     """
-    if not payload.username and not payload.email:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Provide either username or email with password",
-        )
-
-    return await laravel_auth_service.login(
-        password=payload.password,
-        username=payload.username,
-        email=payload.email,
-    )
+    return await laravel_auth_service.login(payload.email, payload.password)
 
 
 @router.get("/me", response_model=TokenValidationResponse)
@@ -62,12 +42,7 @@ async def auth_me(admin: Dict[str, Any] = Depends(get_current_admin)) -> TokenVa
     """
     Validate the Sanctum token and return the authenticated admin profile.
     """
-    return TokenValidationResponse(
-        authenticated=True,
-        user_id=_extract_user_id(admin),
-        user_email=_extract_user_email(admin),
-        user=admin,
-    )
+    return TokenValidationResponse(authenticated=True, user=admin)
 
 
 @router.get("/protected-example", response_model=TokenValidationResponse)
@@ -77,9 +52,4 @@ async def protected_example(
     """
     Example protected endpoint that you can copy to secure your business APIs.
     """
-    return TokenValidationResponse(
-        authenticated=True,
-        user_id=_extract_user_id(admin),
-        user_email=_extract_user_email(admin),
-        user=admin,
-    )
+    return TokenValidationResponse(authenticated=True, user=admin)
