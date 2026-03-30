@@ -1,0 +1,69 @@
+from typing import Any, Dict, Optional
+
+import httpx
+from fastapi import HTTPException, status
+
+from app.core.config import settings
+
+
+class LaravelAuthService:
+    """Service that proxies Sanctum authentication checks to Laravel API."""
+
+    def __init__(self) -> None:
+        self.base_url = settings.LARAVEL_BASE_URL.rstrip("/")
+        self.login_endpoint = settings.LARAVEL_LOGIN_ENDPOINT
+        self.me_endpoint = settings.LARAVEL_ME_ENDPOINT
+        self.timeout = settings.LARAVEL_TIMEOUT_SECONDS
+
+    async def login(self, email: str, password: str) -> Dict[str, Any]:
+        payload = {"email": email, "password": password}
+
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            response = await client.post(f"{self.base_url}{self.login_endpoint}", json=payload)
+
+        if response.status_code >= 400:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Laravel login failed",
+            )
+
+        data = response.json()
+        token = data.get("token")
+        if not token:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Laravel response did not include a token",
+            )
+        return data
+
+    async def validate_token(self, token: str) -> Dict[str, Any]:
+        headers = {"Authorization": f"Bearer {token}"}
+
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            response = await client.get(f"{self.base_url}{self.me_endpoint}", headers=headers)
+
+        if response.status_code in {401, 403}:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired Sanctum token",
+            )
+
+        if response.status_code >= 400:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Unable to validate token with Laravel",
+            )
+
+        data = response.json()
+        if isinstance(data, dict) and "data" in data and isinstance(data["data"], dict):
+            return data["data"]
+        if isinstance(data, dict):
+            return data
+
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Unexpected response format from Laravel",
+        )
+
+
+laravel_auth_service = LaravelAuthService()
