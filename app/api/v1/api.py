@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from app.api.leads_dashboard import dashboard
 from app.api.leads_dashboard import dashboard_vac
 from app.api.leads_dashboard import revenue_dashboard
+from app.api.v1 import auth
 api_router = APIRouter()
 
 # Register leads dashboard
@@ -22,4 +23,10 @@ api_router.include_router(
     revenue_dashboard.router,
     prefix="/revenue-dashboard",
     tags=["Revenue Dashboard"]
+)
+
+api_router.include_router(
+    auth.router,
+    prefix="/auth",
+    tags=["Auth"]
 )
